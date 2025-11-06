@@ -99,8 +99,8 @@
 # 🛠 Встановлення
 
 ## ✅ 1. Клонувати репозиторій
-git clone https://github.com/<your_repo>/telegram_bot_gpt.git
-cd telegram_bot_gpt
+git clone https://github.com/AlexDazhuk/telegramgpt-do-bot.git
+cd telegramgpt-do-bot
 
 ## ✅ 2. Створити та активувати віртуальне середовище
 
