@@ -8,6 +8,7 @@ import logging
 # ---------------------------------
 from telegram import Update
 from telegram.ext import ContextTypes
+from telegram.helpers import escape_markdown
 
 # ---------------------------------
 # Імпорти локальних модулів застосунку
@@ -22,7 +23,8 @@ from gpt_instance import chat_gpt
 from util import (
     load_prompt,
     send_image,
-    send_text_buttons
+    send_text_buttons,
+    send_text_buttons_raw
 )
 
 logger = logging.getLogger(__name__)
@@ -85,12 +87,15 @@ async def talk_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
         prompt = load_prompt(data)
         chat_gpt.set_prompt(prompt)
 
-        personality_name = data.replace('talk_', '').capitalize()
+        personality_name = data.replace('talk_', '').replace('_', ' ').title()
 
         await send_image(update, context, data)
 
-        await send_text_buttons(
-            update, context,
-            f"👤 Ви обрали *{personality_name}*. Напишіть повідомлення, щоб почати діалог.",
+        safe_name = escape_markdown(personality_name, version=2)
+
+        await send_text_buttons_raw(
+            update,
+            context,
+            f"👤 Ви обрали *{safe_name}*.\nНапишіть повідомлення, щоб почати діалог.",
             {'start': 'Закінчити 🏁'}
         )

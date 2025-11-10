@@ -8,6 +8,7 @@ import logging
 # ---------------------------------
 from telegram import Update
 from telegram.ext import ContextTypes
+from telegram.helpers import escape_markdown
 
 # ---------------------------------
 # Імпорти локальних модулів застосунку
@@ -23,7 +24,7 @@ from util import (
     load_prompt,
     send_image,
     send_text,
-    send_text_buttons
+    send_text_buttons_mix
 )
 
 logger = logging.getLogger(__name__)
@@ -90,10 +91,12 @@ async def random_fact(update: Update, context: ContextTypes.DEFAULT_TYPE):
             'start': 'Закінчити 🏁'
         }
 
-        await send_text_buttons(
+        safe_fact = escape_markdown(fact, version=2)
+
+        await send_text_buttons_mix(
             update,
             context,
-            f"🚀 <b>Випадковий факт від AI:<b>\n\n{fact}",
+            f"*🚀 Випадковий факт від AI:*\n\n{safe_fact}",
             buttons
         )
 

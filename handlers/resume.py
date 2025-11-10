@@ -23,7 +23,8 @@ from util import (
     load_prompt,
     send_image,
     send_text,
-    send_text_buttons
+    send_text_mix,
+    send_text_buttons_raw
 )
 
 logger = logging.getLogger(__name__)
@@ -40,11 +41,11 @@ async def resume_help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     context.user_data["conversation_state"] = "resume_get_name"
 
-    await send_text(
+    await send_text_mix(
         update,
         context,
-        "💼 Давайте створимо ваше резюме!\n\n"
-        "✍️ Почнімо. Напишіть, будь ласка, *ваше імʼя та прізвище*."
+        "💼 Давайте створимо Ваше резюме!\n\n"
+        "✍️ Почнемо. Напишіть будь-ласка, *Ваше імʼя та прізвище*."
     )
 
 
@@ -58,10 +59,10 @@ async def resume_collect_data(update: Update, context: ContextTypes.DEFAULT_TYPE
         context.user_data["resume_name"] = text
         context.user_data["conversation_state"] = "resume_get_education"
 
-        return await send_text(
+        return await send_text_mix(
             update,
             context,
-            "🎓 Добре! Тепер напишіть інформацію про *вашу освіту*.\n"
+            "🎓 Добре! Тепер напишіть інформацію про *Вашу освіту*.\n"
             "(ВНЗ, спеціальність, роки)"
         )
 
@@ -70,10 +71,10 @@ async def resume_collect_data(update: Update, context: ContextTypes.DEFAULT_TYPE
         context.user_data["resume_education"] = text
         context.user_data["conversation_state"] = "resume_get_experience"
 
-        return await send_text(
+        return await send_text_mix(
             update,
             context,
-            "💼 Чудово! Тепер опишіть *досвід роботи*.\n"
+            "💼 Чудово! Тепер опишіть *Досвід роботи*.\n"
             "(Компанія, посада, обовʼязки, роки)"
         )
 
@@ -82,10 +83,10 @@ async def resume_collect_data(update: Update, context: ContextTypes.DEFAULT_TYPE
         context.user_data["resume_experience"] = text
         context.user_data["conversation_state"] = "resume_get_skills"
 
-        return await send_text(
+        return await send_text_mix(
             update,
             context,
-            "🛠️ Супер! А тепер напишіть *ваші ключові навички*."
+            "🛠️ Супер! А тепер напишіть *Ваші ключові навички*."
         )
 
     # 4. Навички → Генерація резюме
@@ -125,7 +126,7 @@ async def generate_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "resume_restart": "🔄 Почати заново"
         }
 
-        await send_text_buttons(
+        await send_text_buttons_raw(
             update,
             context,
             f"📄 *Ваше резюме готове:*\n\n{resume_text}",

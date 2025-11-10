@@ -3,6 +3,7 @@
 # ---------------------------------
 from telegram import Update
 from telegram.ext import ContextTypes
+from telegram.helpers import escape_markdown
 
 # ---------------------------------
 # Імпорти локальних модулів застосунку
@@ -17,7 +18,6 @@ from gpt_instance import chat_gpt
 from util import (
     load_prompt,
     send_image,
-    send_text,
     send_text_buttons
 )
 
@@ -25,6 +25,16 @@ from util import (
 # ------------------------------------------------
 # 🌐 ПЕРЕКЛАДАЧ — команда /translate
 # ------------------------------------------------
+# ✅ Назви мов для відображення користувачу
+LANG_NAMES = {
+    "translate_en": "🇬🇧 Англійська",
+    "translate_ua": "🇺🇦 Українська",
+    "translate_de": "🇩🇪 Німецька",
+    "translate_pl": "🇵🇱 Польська",
+    "translate_es": "🇪🇸 Іспанська",
+}
+
+
 async def translate_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Стартує режим перекладача:
@@ -74,19 +84,25 @@ async def translate_button_handler(update: Update, context: ContextTypes.DEFAULT
     if data == "translate_change":
         return await translate_handler(update, context)
 
-    # ✅ Вибір мови
+    # ✅ Вибір мови перекладу
     if data.startswith("translate_"):
-        lang = data.replace("translate_", "")
         context.user_data.clear()
-
         context.user_data["conversation_state"] = "translate"
         context.user_data["translate_lang"] = data
 
         prompt = load_prompt(data)
         chat_gpt.set_prompt(prompt)
 
-        await send_text(
-            update,
-            context,
-            f"✅ Мову обрано. Тепер надішліть текст, який потрібно перекласти."
+        lang_name = LANG_NAMES.get(data, "Обрана мова")
+
+        # Екрануємо для MarkdownV2
+        safe_lang = escape_markdown(lang_name, version=2)
+        safe_title = escape_markdown("Мову обрано:", version=2)
+        safe_hint = escape_markdown("Надішліть текст, який потрібно перекласти.", version=2)
+
+        # ✅ НАДСИЛАЄМО НАПРЯМУ ЧЕРЕЗ TELEGRAM API
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=f"✅ *{safe_title}* *{safe_lang}*\n\n{safe_hint}",
+            parse_mode="MarkdownV2"
         )

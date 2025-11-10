@@ -11,7 +11,7 @@ from telegram.ext import ContextTypes
 from util import (
     load_message,
     send_image,
-    send_text,
+    send_text_mix,
     show_main_menu
 )
 
@@ -22,9 +22,10 @@ from util import (
 async def start_screen(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()  # видалення попередніх станів розмови
 
-    text = load_message('main')
+    text = load_message("main")
+
     await send_image(update, context, '1_start_screen_neon')
-    await send_text(update, context, text)
+    await send_text_mix(update, context, text)
     await show_main_menu(update, context, {
         'start': 'Головне меню',
         'random': 'Випадковий факт',

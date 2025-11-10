@@ -8,6 +8,7 @@ import logging
 # ---------------------------------
 from telegram import Update
 from telegram.ext import ContextTypes
+from telegram.helpers import escape_markdown
 
 # ---------------------------------
 # Імпорти локальних модулів застосунку
@@ -16,6 +17,7 @@ from telegram.ext import ContextTypes
 from handlers.start import start_screen
 from handlers.resume import resume_collect_data
 from handlers.quiz import quiz_check_answer
+from handlers.translate import LANG_NAMES
 
 # ✅ ChatGPT сервіс
 from gpt_instance import chat_gpt
@@ -24,7 +26,8 @@ from gpt_instance import chat_gpt
 from util import (
     load_prompt,
     send_text,
-    send_text_buttons
+    send_text_buttons,
+    send_text_buttons_raw
 )
 
 logger = logging.getLogger(__name__)
@@ -53,71 +56,126 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await show_funny_response(update, context)
         return
 
+
     # ✅ 4) Режим GPT
     if state == "gpt":
         waiting = await send_text(update, context, "🔍 Обробляю ваше питання…")
+
         try:
-            response = await chat_gpt.add_message(message_text)
+            response_raw = await chat_gpt.add_message(message_text)
+
+            # ✅ Екрануємо ТІЛЬКИ відповідь
+            response = escape_markdown(response_raw, version=2)
+
             await context.bot.delete_message(update.effective_chat.id, waiting.message_id)
-            await send_text(update, context, f"🤖 *Відповідь ChatGPT:*\n\n{response}")
+
+            # ✅ Заголовок не екрануємо
+            text = f"🤖 *Відповідь ChatGPT:*\n\n{response}"
+
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=text,
+                parse_mode="MarkdownV2"
+            )
+
         except Exception as e:
             logger.error(f"GPT error: {e}")
             await context.bot.delete_message(update.effective_chat.id, waiting.message_id)
             await send_text(update, context, "😔 Сталася помилка. Спробуйте пізніше.")
         return
 
+
     # ✅ 5) Режим TALK (діалог з відомою особистістю)
     if state == "talk":
         personality = context.user_data.get("selected_personality")
 
         if not personality:
-            return await send_text(update, context, "😕 Спочатку виберіть особистість командою /talk")
+            personalities = {
+                'talk_steve_jobs': 'Стів Джобс (Apple) 💡',
+                'talk_elon_musk': 'Ілон Маск (SpaceX) 🚀',
+                'talk_marie_curie': 'Марія Кюрі (Науковиця) ⚗️',
+                'talk_leonardo_da_vinci': 'Леонардо да Вінчі (Митець) 🎨',
+                'talk_nikola_tesla': 'Нікола Тесла (Винахідник) ⚡',
+                'talk_albert_einstein': 'Альберт Ейнштейн (Фізик) 🧠',
+                'start': 'Закінчити 🏁'
+            }
 
+            return await send_text_buttons(
+                update, context,
+                "👤 Спочатку оберіть легенду 👇",
+                personalities
+            )
+
+        # ✅ якщо особистість вже вибрана
         waiting = await send_text(update, context, "🔍 Обробляю…")
+        context.user_data["waiting_msg_id"] = waiting.message_id
 
         try:
             response = await chat_gpt.add_message(message_text)
-            await context.bot.delete_message(update.effective_chat.id, waiting.message_id)
 
-            await send_text_buttons(
+            # ✅ БЕЗПЕЧНЕ ВИДАЛЕННЯ
+            msg_id = context.user_data.get("waiting_msg_id")
+            if msg_id:
+                try:
+                    await context.bot.delete_message(update.effective_chat.id, msg_id)
+                except Exception as e:
+                    logger.warning(f"Не вдалось видалити waiting message: {e}")
+            context.user_data["waiting_msg_id"] = None
+
+            await send_text_buttons_raw(
                 update,
                 context,
-                f"👤 *{personality.replace('talk_', '').capitalize()}:*\n\n{response}",
+                f"👤 *{personality.replace('talk_', '').replace('_', ' ').title()}:*\n\n{response}",
                 {"start": "🏁 Закінчити"}
             )
+
         except Exception as e:
             logger.error(f"TALK error: {e}")
-            await context.bot.delete_message(update.effective_chat.id, waiting.message_id)
+
+            try:
+                print("DELETE TRY:", context.user_data.get("waiting_msg_id"))
+                await context.bot.delete_message(update.effective_chat.id, waiting.message_id)
+            except:
+                pass
+
             await send_text(update, context, "😔 Сталася помилка. Спробуйте пізніше.")
+
         return
 
+
     # ✅ 6) Режим Перекладача
+
+    # 🛑 Якщо мова не вибрана — нагадуємо
+    if state == "translate_select_lang":
+        return await send_text(
+            update,
+            context,
+            "🌐 Спочатку виберіть мову перекладу зі списку вище."
+        )
+
     if state == "translate":
-        lang = context.user_data.get("translate_lang")
 
-        if not lang:
-            return await send_text(update, context, "🌐 Спочатку оберіть мову: /translate")
+        lang_key = context.user_data["translate_lang"]
+        lang_label = LANG_NAMES.get(lang_key, "Обрана мова")
 
-        prompt = load_prompt(lang)
+        prompt = load_prompt(lang_key)
         chat_gpt.set_prompt(prompt)
 
         waiting = await send_text(update, context, "🔍 Перекладаю...")
 
         try:
             translation = await chat_gpt.send_question(prompt, message_text)
-
             await context.bot.delete_message(update.effective_chat.id, waiting.message_id)
 
-            # Кнопки дій
             buttons = {
                 "translate_change": "🌐 Змінити мову",
                 "start": "🏁 Завершити"
             }
 
-            await send_text_buttons(
+            await send_text_buttons_raw(
                 update,
                 context,
-                f"📘 *Переклад:*\n\n{translation}",
+                f"📘 *Переклад на:* *{lang_label}*\n\n{translation}",
                 buttons
             )
 
@@ -125,6 +183,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.error(f"Translate error: {e}")
             await context.bot.delete_message(update.effective_chat.id, waiting.message_id)
             await send_text(update, context, "⚠️ Помилка перекладу. Спробуйте пізніше.")
+
         return
 
 
@@ -216,4 +275,3 @@ async def show_funny_response(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     # Після жарту — повернення на головний екран
     await start_screen(update, context)
-

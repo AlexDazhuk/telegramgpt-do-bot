@@ -23,7 +23,9 @@ from util import (
     load_prompt,
     send_image,
     send_text,
-    send_text_buttons
+    send_text_raw,
+    send_text_buttons,
+    send_text_buttons_raw
 )
 
 logger = logging.getLogger(__name__)
@@ -115,7 +117,7 @@ async def quiz_generate_question(update: Update, context: ContextTypes.DEFAULT_T
         context.user_data["conversation_state"] = "quiz_waiting_answer"
         context.user_data["current_question"] = question
 
-        await send_text(update, context, f"❓ *Питання:*\n\n{question}\n\n✍️ Напишіть вашу відповідь:")
+        await send_text_raw(update, context, f"❓ *Питання:*\n\n{question}\n\n✍️ Напишіть вашу відповідь:")
 
     except Exception as e:
         logger.error(f"Quiz error: {e}")
@@ -172,6 +174,7 @@ async def quiz_check_answer(update: Update, context: ContextTypes.DEFAULT_TYPE, 
             f"❔ Всього: {context.user_data['total']}"
         )
 
+
         # Кнопки дій
         buttons = {
             "quiz_next": "🔄 Наступне питання",
@@ -180,7 +183,7 @@ async def quiz_check_answer(update: Update, context: ContextTypes.DEFAULT_TYPE, 
         }
 
         # Відправляємо результат
-        await send_text_buttons(
+        await send_text_buttons_raw(
             update,
             context,
             f"📘 *Результат:*\n\n{result}\n\n📊 *Ваш рахунок:*\n{score}",

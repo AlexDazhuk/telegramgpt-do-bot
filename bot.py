@@ -12,7 +12,6 @@ from telegram.ext import (
     ApplicationBuilder,
     CallbackQueryHandler,
     CommandHandler,
-    ContextTypes,
     MessageHandler,
     filters
 )
@@ -29,9 +28,10 @@ from handlers.quiz import quiz_handler, quiz_button_handler
 from handlers.translate import translate_handler, translate_button_handler
 from handlers.resume import resume_help_handler, resume_button_handler
 from handlers.message import message_handler
+from handlers.help import help_handler
 
 # ✅ конфігурація та логування
-from credentials import BOT_TOKEN, ChatGPT_TOKEN
+from credentials import BOT_TOKEN
 from logging_config import setup_logging
 from error_handler import handle_common_error
 
@@ -76,7 +76,8 @@ app.add_handler(CommandHandler('gpt', gpt_handler))
 app.add_handler(CommandHandler('talk', talk_handler))
 app.add_handler(CommandHandler('quiz', quiz_handler))
 app.add_handler(CommandHandler('translate', translate_handler))
-app.add_handler(CommandHandler('resume_help', resume_help_handler)) # тимчасово
+app.add_handler(CommandHandler('resume_help', resume_help_handler))
+app.add_handler(CommandHandler("help", help_handler))
 
 # -------------------------------------------
 # ✅ Callback для кнопок Випадкових Фактів
