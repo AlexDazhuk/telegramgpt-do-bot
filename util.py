@@ -12,6 +12,7 @@ from telegram.helpers import escape_markdown
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 from pathlib import Path
+import json
 import re
 
 
@@ -188,6 +189,19 @@ def load_prompt(name: str) -> str:
     """
     with open(f"resources/prompts/{name}.txt", encoding="utf8") as f:
         return f.read()
+
+
+def load_bot_commands() -> dict:
+    """
+    Завантажує список команд бота з JSON-файлу.
+
+    Повертає:
+        dict: словник команд у форматі {"command": "description"}.
+    """
+    file_path = Path("resources/messages/commands.json")
+
+    with file_path.open("r", encoding="utf-8") as file:
+        return json.load(file)
 
 
 # -----------------------------------

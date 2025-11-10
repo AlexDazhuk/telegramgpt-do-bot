@@ -7,7 +7,7 @@ import logging
 # Імпорти сторонніх бібліотек
 # ---------------------------------
 from colorama import Fore, Style, init as colorama_init
-from telegram import Update
+from telegram import Update, BotCommand
 from telegram.ext import (
     ApplicationBuilder,
     CallbackQueryHandler,
@@ -28,7 +28,6 @@ from handlers.quiz import quiz_handler, quiz_button_handler
 from handlers.translate import translate_handler, translate_button_handler
 from handlers.resume import resume_help_handler, resume_button_handler
 from handlers.message import message_handler
-from handlers.help import help_handler
 
 # ✅ конфігурація та логування
 from credentials import BOT_TOKEN
@@ -37,6 +36,27 @@ from error_handler import handle_common_error
 
 # ✅ утиліти
 from util import default_callback_handler
+
+
+# ------------------------------------------------------
+# ✅ ОФІЦІЙНЕ МЕНЮ КОМАНД TELEGRAM
+#     Цей блок встановлює список команд, які Telegram
+#     показує у кнопці «Меню» для користувача.
+# ------------------------------------------------------
+
+async def setup_bot_commands(app):
+    commands = [
+        BotCommand("start", "Головне меню · 🌟"),
+        BotCommand("random", "Випадковий факт · 🎲"),
+        BotCommand("gpt", "Поставити запитання ChatGPT · 🤖"),
+        BotCommand("talk", "Розмова з відомою особистістю · 👤"),
+        BotCommand("quiz", "Пройти квіз · 🧠"),
+        BotCommand("translate", "Перекладач · 🌐"),
+        BotCommand("resume_help", "Допомога з резюме · 💼"),
+    ]
+
+    await app.bot.set_my_commands(commands)
+    print("✅ MENU UPDATED — sent to Telegram")
 
 
 # ---------------------------------
@@ -66,6 +86,9 @@ console_format = logging.Formatter(
 # ---------------------------------
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 
+# ✅ автоматичне встановлення меню команд
+app.post_init = setup_bot_commands
+
 
 # -------------------------------------------
 # ✅ Реєстрація всіх команд
@@ -77,7 +100,7 @@ app.add_handler(CommandHandler('talk', talk_handler))
 app.add_handler(CommandHandler('quiz', quiz_handler))
 app.add_handler(CommandHandler('translate', translate_handler))
 app.add_handler(CommandHandler('resume_help', resume_help_handler))
-app.add_handler(CommandHandler("help", help_handler))
+
 
 # -------------------------------------------
 # ✅ Callback для кнопок Випадкових Фактів
